@@ -1,0 +1,6 @@
+torchmetrics
+summary
+torch 
+torchaudio 
+matplotlib
+pandas 
