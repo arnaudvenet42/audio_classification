@@ -1,6 +1,6 @@
-torchmetrics
-summary
 torch 
 torchaudio 
-matplotlib
+numpy
 pandas 
+matplotlib
+plotly

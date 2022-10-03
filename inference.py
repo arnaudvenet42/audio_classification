@@ -1,9 +1,10 @@
 from pathlib import Path
-from model import CNN
-from dataset import UrbanSoundDataset
-from train import transformation, device
-from train import DATASET_DIR, SAMPLE_RATE, NUM_SAMPLES
 import torch
+import torchaudio
+import torch.nn as nn
+from dataset import UrbanSoundDataset, MelSpectrogram3Channels
+from model import CNN, DenseNet
+from train import DATASET_DIR, SAMPLE_RATE, NUM_SAMPLES, transformation, device
 
 class_mapping = [
     "air_conditioner",
@@ -18,16 +19,15 @@ class_mapping = [
     "street_music"
 ]
 
-model_path = Path("./model/model.pth")
-
-model = CNN().to(device)
+model_path = Path("./model/model_dense_DA.pth")
+model = DenseNet().to(device)
 model.load_state_dict(torch.load(model_path))
 
-dataset = UrbanSoundDataset(DATASET_DIR, SAMPLE_RATE, NUM_SAMPLES, transformation=transformation, device=device)
+dataset = UrbanSoundDataset(DATASET_DIR, SAMPLE_RATE, NUM_SAMPLES, transformation=transformation, device=device, folder=2, data_augment=False)
 
 
-signal, target = dataset[0]
-signal = signal.unsqueeze(0)
+# signal, target = dataset[0]
+# signal = signal.unsqueeze(0)
 
 preds = []
 targets = []
@@ -36,14 +36,27 @@ for signal, target in dataset:
     preds.append(predicted_index)
     targets.append(target)
 
+
 from torchmetrics import ConfusionMatrix
 confmat = ConfusionMatrix(num_classes=len(class_mapping))
-mat = confmat(torch.tensor(preds), torch.tensor(targets))
-mat = mat / mat.sum(axis=1)
-mat.diag().sum()/mat.sum()
+mat = confmat(torch.tensor(preds), torch.tensor(targets))  # lines = targets, columns = preds
+mat = (mat.T / mat.sum(axis=1)).T
+mat.diag().sum()/mat.sum()  
+# CUSTUM MODEL best i had 64.39% -> on training set .., model2 -> 60.60%
+# DENSENET MODEL without DA : 10epochs -> 99.7% on training set (1), 56.84 -> on test set (2) (no DA)
+# DENSENET MODEL with DA : +10epochs -> ?% on training set (1), 59.19 -> on test set (2) 
+# DENSENET MODEL with DA : +10epochs -> 100% on training set (1), 65.25 -> on test set (2) 
+# .. DA is shit ?
+# DENSENET MODEL with DA on fold2 : 10epochs -> 98.6% on training set (2), 65.25 -> on test set (1) 
 import matplotlib.pyplot as plt
-plt.imshow(mat)
-plt.show()
+import matplotlib
+fig, ax = plt.subplots()
+ax.imshow(mat)
+plt.xlabel("predictions")
+plt.ylabel("targets")
+plt.xticks(ticks=range(10), labels=class_mapping, rotation=20)
+plt.yticks(ticks=range(10), labels=class_mapping)
+plt.show(block=False)
 
 
 

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torchsummary import summary
-
+import torchvision.models as models
 
 class CNN(nn.Module):
     def __init__(self):
@@ -28,7 +28,8 @@ class CNN(nn.Module):
             nn.MaxPool2d(kernel_size=2)
         )
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(128 * 5 * 4, 10)
+        # self.linear = nn.Linear(128 * 5 * 4, 10)
+        self.linear = nn.Linear(128 * 9 * 12, 10)
         self.softmax = nn.Softmax(dim=1)
     #
     def forward(self, input_data):
@@ -43,7 +44,23 @@ class CNN(nn.Module):
         return preditions
 
 
+class DenseNet(nn.Module):
+    def __init__(self, pretrained=True):
+        super(DenseNet, self).__init__()
+        num_classes = 10
+        self.model = models.densenet201(pretrained=pretrained)
+        self.model.classifier = nn.Linear(1920, num_classes)
+    #
+    def forward(self, x):
+        output = self.model(x)
+        return output
+
+
 if __name__ == "__main__":
     device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
     model = CNN().to(device)
-    summary(model, (1, 64, 44)) 
+    # summary(model, (1, 64, 44)) 
+    summary(model, (1, 128, 169)) 
+    model = DenseNet().to(device)
+    summary(m, (3, 224, 224))  # image net
+    summary(model, (3, 128, 250))  # article 
